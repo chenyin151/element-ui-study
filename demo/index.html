@@ -1,0 +1,68 @@
+<!--
+ * @Description: 
+ * @version: 
+ * @Author: cy
+ * @Date: 2021-01-15 17:05:16
+ * @LastEditors: cy
+ * @LastEditTime: 2021-01-15 17:45:58
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="div">Click</div>
+    <script>
+        const off = (function() {
+            if (document.removeEventListener) {
+                return function(element, event, handler) {
+                    if (element && event) {
+                        element.removeEventListener(event, handler, false);
+                    }
+                };
+            } else {
+                return function(element, event, handler) {
+                    if (element && event) {
+                        element.detachEvent('on' + event, handler);
+                    }
+                };
+            }
+        })();
+        const on = (function() {
+            if (document.addEventListener) {
+                    return function(element, event, handler) {
+                        if (element && event && handler) {
+                            element.addEventListener(event, handler, false);
+                        }
+                    };
+            } else {
+                return function(element, event, handler) {
+                    if (element && event && handler) {
+                        element.attachEvent('on' + event, handler);
+                    }
+                };
+            }
+        })();
+        // 触发了一次侦听器就移除侦听器，调用方式为once(el, 'click', function(){}),然后它会执行on， on的第三个参数
+        // 是listener,为什么不用传进来的fn?因为我们希望他侦听一次回调就取消，那么我们必须给传入on的回调再进行一次包装，
+        // 让他执行一次回调的时候就off一下，咱们来看看listener的实现，里面有一个fn.apply,
+        const once = function(el, event, fn) {
+            var listener = function() {
+                if (fn) {
+                    console.log('once', arguments)
+                    fn.apply(this, arguments);
+                }
+                off(el, event, listener);
+            };
+            on(el, event, listener);
+        };
+        let div = document.querySelector('#div');
+        once(div, 'click', function(){
+            console.log('click')
+        })
+    </script>
+</body>
+</html>
