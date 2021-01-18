@@ -4,7 +4,7 @@
  * @Author: cy
  * @Date: 2021-01-15 17:05:16
  * @LastEditors: cy
- * @LastEditTime: 2021-01-18 13:07:15
+ * @LastEditTime: 2021-01-18 17:23:31
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -14,8 +14,9 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="div">Click</div>
+    <div id="div" class="display">Click</div>
     <script>
+        var ieVersion = document.documentMode;
         const off = (function() {
             if (document.removeEventListener) {
                 return function(element, event, handler) {
@@ -66,6 +67,110 @@
         once(div, 'click', function(){
             console.log('click')
         })
+
+        // 判断某个元素是否具有某个class， el是元素， cls是className, 当元素和class为空的时候返回false，并且className
+        // 不能有空格，然后用el.classList.contains来判断元素是否有指定的class, el.classList只能兼容到IE10以上，所以要
+        // 做判断，若浏览器不兼容classList则通过className来判断
+        function hasClass(el, cls) {
+            if (!el || !cls) return false;
+            if (cls.indexOf(' ') !== -1) throw new Error('className should not contain space.');
+            if (el.classList) {
+                return el.classList.contains(cls);
+            } else {
+                return (' ' + el.className + ' ').indexOf(' ' + cls + ' ') > -1;
+            }
+        };
+        hasClass(div, 'display')
+        // 给某个元素添加class，先判断这个元素是否存在，若不存在则什么都不做，用classes存储要传入的class列表（cls='opacity display'），
+        // 解析成classes就变成['opacity', 'display']，然后遍历classes，并把classes的每一项赋值给clsName，若clsName为空则执行下一个循环，
+        // 若在IE10以上，则存在classList，就把每一个class存入classList中(classList可以重复插入相同的className,它会自动去重)，否则去看看
+        // 元素中有没这个className，若没有则存入curClass中，并在最终存入元素的className属性中
+        function addClass(el, cls) {
+            if (!el) return;
+            var curClass = el.className;
+            var classes = (cls || '').split(' ');
+
+            for (var i = 0, j = classes.length; i < j; i++) {
+                var clsName = classes[i];
+                if (!clsName) continue;
+
+                if (el.classList) {
+                    el.classList.add(clsName);
+                } else if (!hasClass(el, clsName)) {
+                    curClass += ' ' + clsName;
+                }
+            }
+            if (!el.classList) {
+                el.className = curClass;
+            }
+        };
+        addClass(div, 'opacity')
+        addClass(div, 'opacity');
+        console.log(div.classList)
+
+        // 移除已存在的className,这里大部分都给addClass一样，唯一不同的时候移除className,他是先判断
+        // 这个className是否存在于element上，若存在则用replace替换为空字符串，然后在最后用trim清空
+        // 空字符串，若有classList则调用classList的remove方法
+        function removeClass(el, cls) {
+            if (!el || !cls) return;
+            var classes = cls.split(' ');
+            var curClass = ' ' + el.className + ' ';
+
+            for (var i = 0, j = classes.length; i < j; i++) {
+                var clsName = classes[i];
+                if (!clsName) continue;
+
+                if (el.classList) {
+                    el.classList.remove(clsName);
+                } else if (hasClass(el, clsName)) {
+                    curClass = curClass.replace(' ' + clsName + ' ', ' ');
+                }
+            }
+            if (!el.classList) {
+                el.className = trim(curClass);
+            }
+        };
+
+        // 获取样式，styleFloat是IE6~IE8的兼容写法，FF/Chrome以及IE9以上用style.cssFloat
+        const getStyle = ieVersion < 9 ? function(element, styleName) {
+            if (!element || !styleName) return null;
+            styleName = camelCase(styleName);
+            if (styleName === 'float') {
+                styleName = 'styleFloat';
+            }
+            try {
+                switch (styleName) {
+                case 'opacity':
+                    try {
+                        return element.filters.item('alpha').opacity / 100;
+                    } catch (e) {
+                        return 1.0;
+                    }
+                    // element.currentStyle是一个与window.getComputedStyle方法功能相同的属性，这个属性实现在旧版本
+                    // 的IE浏览器中, currentStyle[styleName]获取CSS某个属性的值，如：currentStyle['opacity']
+                    // getComputedStyle返回一个对象，该对象包含所有返回CSS属性的值，参数为：
+                    // [element]：用于获取计算样式的Element
+                    // [pseudoElt]:可选，指定一个要匹配的伪元素字符串，必须对普通元素省略(或null)
+                default:
+                    return (element.style[styleName] || element.currentStyle ? element.currentStyle[styleName] : null);
+                }
+            } catch (e) {
+                return element.style[styleName];
+            }
+        } : function(element, styleName) {
+            if (!element || !styleName) return null;
+            styleName = camelCase(styleName);
+            if (styleName === 'float') {
+                styleName = 'cssFloat';
+            }
+            try {
+                var computed = document.defaultView.getComputedStyle(element, '');
+                return element.style[styleName] || computed ? computed[styleName] : null;
+            } catch (e) {
+                return element.style[styleName];
+            }
+        };
+
     </script>
 </body>
 </html>

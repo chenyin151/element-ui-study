@@ -5,9 +5,11 @@ import Vue from 'vue';
 const isServer = Vue.prototype.$isServer;
 const SPECIAL_CHARS_REGEXP = /([\:\-\_]+(.))/g;
 const MOZ_HACK_REGEXP = /^moz([A-Z])/;
+// document.documentMode只有在IE下有效，Chrome下是undefined,它主要是用来获取IE的版本号
 const ieVersion = isServer ? 0 : Number(document.documentMode);
 
 /* istanbul ignore next */
+// 清空空字符串
 const trim = function(string) {
   return (string || '').replace(/^[\s\uFEFF]+|[\s\uFEFF]+$/g, '');
 };
@@ -72,6 +74,9 @@ export const once = function(el, event, fn) {
 };
 
 /* istanbul ignore next */
+// 判断某个元素是否具有某个class， el是元素， cls是className, 当元素和class为空的时候返回false，并且className
+// 不能有空格，然后用el.classList.contains来判断元素是否有指定的class, el.classList只能兼容到IE10以上，所以要
+// 做判断，若浏览器不兼容classList则通过className来判断
 export function hasClass(el, cls) {
   if (!el || !cls) return false;
   if (cls.indexOf(' ') !== -1) throw new Error('className should not contain space.');
@@ -83,6 +88,10 @@ export function hasClass(el, cls) {
 };
 
 /* istanbul ignore next */
+// 给某个元素添加class，先判断这个元素是否存在，若不存在则什么都不做，用classes存储要传入的class列表（cls='opacity display'），
+// 解析成classes就变成['opacity', 'display']，然后遍历classes，并把classes的每一项赋值给clsName，若clsName为空则执行下一个循环，
+// 若在IE10以上，则存在classList，就把每一个class存入classList中(classList可以重复插入相同的className,它会自动去重)，否则去看看
+// 元素中有没这个className，若没有则存入curClass中，并在最终存入元素的className属性中
 export function addClass(el, cls) {
   if (!el) return;
   var curClass = el.className;
@@ -104,6 +113,9 @@ export function addClass(el, cls) {
 };
 
 /* istanbul ignore next */
+// 移除已存在的className,这里大部分都给addClass一样，唯一不同的时候移除className,他是先判断
+// 这个className是否存在于element上，若存在则用replace替换为空字符串，然后在最后用trim清空
+// 空字符串，若有classList则调用classList的remove方法
 export function removeClass(el, cls) {
   if (!el || !cls) return;
   var classes = cls.split(' ');
