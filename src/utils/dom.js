@@ -55,7 +55,12 @@ export const off = (function() {
 })();
 
 /* istanbul ignore next */
-// 对元素执行一次监听就取消
+// 触发了一次侦听器就移除侦听器，调用方式为once(el, 'click', function(){}),然后它会执行on， on的第三个参数
+// 是listener,为什么不用传进来的fn?因为我们希望他侦听一次回调就取消，那么我们必须给传入on的回调再进行一次包装，
+// 让他执行一次回调的时候就off一下，咱们来看看listener的实现，里面有一个fn.apply, 它会真正执行点击回调函数，并
+// 把事件源和事件参数传递给回调函数。我们可以这样看，listener函数会被on()调用，看on的执行方法我们发现最终会转换
+// 为element.addEventListener(event, listener, false),那么listener里面的this就是element, 它默认的arguments
+// 其实就是event自带的参数，fn是点击的回调，fn.apply(this, arguments)就会执行这个回调
 export const once = function(el, event, fn) {
   var listener = function() {
     if (fn) {
